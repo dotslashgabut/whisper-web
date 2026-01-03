@@ -2,13 +2,17 @@
 
 This is a fork of the original Whisper Web with light/dark mode support.
 
-### Key Differences from Original
+![Whisper Web (light/dark mode fork)](screenshot.png)
+
+**Key Differences from Original**
 - **Dark Mode**: Full support for light and dark themes.
 - **Interactive Transcript**:
   - Click on any line to jump to that part of the audio.
   - Highlights the currently spoken line in real-time.
   - Auto-scrolls to keep the active line in view.
 - **Expanded Export Options**: Support for SRT (subtitles) and LRC (lyrics) formats, in addition to standard TXT and JSON.
+
+## Whisper Web
 
 ML-powered speech recognition directly in your browser! Built with [🤗 Transformers.js](https://github.com/xenova/transformers.js).
 
