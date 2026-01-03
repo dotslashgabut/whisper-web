@@ -129,15 +129,15 @@ export enum AudioSource {
     RECORDING = "RECORDING",
 }
 
-export function AudioManager(props: { transcriber: Transcriber }) {
+export function AudioManager(props: { transcriber: Transcriber; audioRef?: React.RefObject<HTMLAudioElement>; onTimeUpdate?: (time: number) => void }) {
     const [progress, setProgress] = useState<number | undefined>(undefined);
     const [audioData, setAudioData] = useState<
         | {
-              buffer: AudioBuffer;
-              url: string;
-              source: AudioSource;
-              mimeType: string;
-          }
+            buffer: AudioBuffer;
+            url: string;
+            source: AudioSource;
+            mimeType: string;
+        }
         | undefined
     >(undefined);
     const [audioDownloadUrl, setAudioDownloadUrl] = useState<
@@ -239,55 +239,62 @@ export function AudioManager(props: { transcriber: Transcriber }) {
 
     return (
         <>
-            <div className='flex flex-col justify-center items-center rounded-lg bg-white shadow-xl shadow-black/5 ring-1 ring-slate-700/10'>
-                <div className='flex flex-row space-x-2 py-2 w-full px-2'>
-                    <UrlTile
-                        icon={<AnchorIcon />}
-                        text={"From URL"}
-                        onUrlUpdate={(e) => {
-                            props.transcriber.onInputChange();
-                            setAudioDownloadUrl(e);
-                        }}
-                    />
-                    <VerticalBar />
-                    <FileTile
-                        icon={<FolderIcon />}
-                        text={"From file"}
-                        onFileUpdate={(decoded, blobUrl, mimeType) => {
-                            props.transcriber.onInputChange();
-                            setAudioData({
-                                buffer: decoded,
-                                url: blobUrl,
-                                source: AudioSource.FILE,
-                                mimeType: mimeType,
-                            });
-                        }}
-                    />
-                    {navigator.mediaDevices && (
-                        <>
-                            <VerticalBar />
-                            <RecordTile
-                                icon={<MicrophoneIcon />}
-                                text={"Record"}
-                                setAudioData={(e) => {
-                                    props.transcriber.onInputChange();
-                                    setAudioFromRecording(e);
-                                }}
-                            />
-                        </>
-                    )}
+            <div className='flex justify-center w-full'>
+                <div className='flex flex-col justify-center items-center rounded-lg bg-white dark:bg-github-secondary shadow-xl shadow-black/5 ring-1 ring-slate-700/10 dark:ring-github-border'>
+                    <div className='flex flex-row flex-wrap justify-center items-center gap-2 py-2 px-2'>
+                        <UrlTile
+                            icon={<AnchorIcon />}
+                            text={"From URL"}
+                            onUrlUpdate={(e) => {
+                                props.transcriber.onInputChange();
+                                props.transcriber.setSourceName(e.split('/').pop() ?? "audio");
+                                setAudioDownloadUrl(e);
+                            }}
+                        />
+                        <div className="hidden sm:block"><VerticalBar /></div>
+                        <FileTile
+                            icon={<FolderIcon />}
+                            text={"From file"}
+                            onFileUpdate={(decoded, blobUrl, mimeType, fileName) => {
+                                props.transcriber.onInputChange();
+                                props.transcriber.setSourceName(fileName);
+                                setAudioData({
+                                    buffer: decoded,
+                                    url: blobUrl,
+                                    source: AudioSource.FILE,
+                                    mimeType: mimeType,
+                                });
+                            }}
+                        />
+                        {navigator.mediaDevices && (
+                            <>
+                                <div className="hidden sm:block"><VerticalBar /></div>
+                                <RecordTile
+                                    icon={<MicrophoneIcon />}
+                                    text={"Record"}
+                                    setAudioData={(e) => {
+                                        props.transcriber.onInputChange();
+                                        props.transcriber.setSourceName("recording");
+                                        setAudioFromRecording(e);
+                                    }}
+                                />
+                            </>
+                        )}
+                    </div>
+                    {
+                        <AudioDataBar
+                            progress={isAudioLoading ? progress : +!!audioData}
+                        />
+                    }
                 </div>
-                {
-                    <AudioDataBar
-                        progress={isAudioLoading ? progress : +!!audioData}
-                    />
-                }
             </div>
             {audioData && (
                 <>
                     <AudioPlayer
+                        ref={props.audioRef}
                         audioUrl={audioData.url}
                         mimeType={audioData.mimeType}
+                        onTimeUpdate={props.onTimeUpdate}
                     />
 
                     <div className='relative w-full flex justify-center items-center'>
@@ -296,8 +303,8 @@ export function AudioManager(props: { transcriber: Transcriber }) {
                                 props.transcriber.start(audioData.buffer);
                             }}
                             isModelLoading={props.transcriber.isModelLoading}
-                            // isAudioLoading ||
                             isTranscribing={props.transcriber.isBusy}
+                            onStop={props.transcriber.stop}
                         />
 
                         <SettingsTile
@@ -386,7 +393,7 @@ function SettingsModal(props: {
                 <>
                     <label>Select the model to use.</label>
                     <select
-                        className='mt-1 mb-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+                        className='mt-1 mb-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-github-bg dark:border-github-border dark:placeholder-github-muted dark:text-github-text dark:focus:ring-blue-500 dark:focus:border-blue-500'
                         defaultValue={props.transcriber.model}
                         onChange={(e) => {
                             props.transcriber.setModel(e.target.value);
@@ -405,14 +412,13 @@ function SettingsModal(props: {
                                 )
                             )
                             .map((key) => (
-                                <option key={key} value={key}>{`${key}${
-                                    (props.transcriber.multilingual || key.startsWith('distil-whisper/')) ? "" : ".en"
-                                } (${
+                                <option key={key} value={key}>{`${key}${(props.transcriber.multilingual || key.startsWith('distil-whisper/')) ? "" : ".en"
+                                    } (${
                                     // @ts-ignore
                                     models[key][
-                                        props.transcriber.quantized ? 0 : 1
+                                    props.transcriber.quantized ? 0 : 1
                                     ]
-                                }MB)`}</option>
+                                    }MB)`}</option>
                             ))}
                     </select>
                     <div className='flex justify-between items-center mb-3 px-1'>
@@ -451,7 +457,7 @@ function SettingsModal(props: {
                         <>
                             <label>Select the source language.</label>
                             <select
-                                className='mt-1 mb-3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+                                className='mt-1 mb-3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-github-bg dark:border-github-border dark:placeholder-github-muted dark:text-github-text dark:focus:ring-blue-500 dark:focus:border-blue-500'
                                 defaultValue={props.transcriber.language}
                                 onChange={(e) => {
                                     props.transcriber.setLanguage(
@@ -467,7 +473,7 @@ function SettingsModal(props: {
                             </select>
                             <label>Select the task to perform.</label>
                             <select
-                                className='mt-1 mb-3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500'
+                                className='mt-1 mb-3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-github-bg dark:border-github-border dark:placeholder-github-muted dark:text-github-text dark:focus:ring-blue-500 dark:focus:border-blue-500'
                                 defaultValue={props.transcriber.subtask}
                                 onChange={(e) => {
                                     props.transcriber.setSubtask(
@@ -485,13 +491,13 @@ function SettingsModal(props: {
                 </>
             }
             onClose={props.onClose}
-            onSubmit={() => {}}
+            onSubmit={() => { }}
         />
     );
 }
 
 function VerticalBar() {
-    return <div className='w-[1px] bg-slate-200'></div>;
+    return <div className='w-[1px] bg-slate-200 dark:bg-github-border'></div>;
 }
 
 function AudioDataBar(props: { progress: number }) {
@@ -500,7 +506,7 @@ function AudioDataBar(props: { progress: number }) {
 
 function ProgressBar(props: { progress: string }) {
     return (
-        <div className='w-full bg-gray-200 rounded-full h-1 dark:bg-gray-700'>
+        <div className='w-full bg-gray-200 rounded-full h-1 dark:bg-github-border'>
             <div
                 className='bg-blue-600 h-1 rounded-full transition-all duration-100'
                 style={{ width: props.progress }}
@@ -576,6 +582,7 @@ function FileTile(props: {
         decoded: AudioBuffer,
         blobUrl: string,
         mimeType: string,
+        fileName: string,
     ) => void;
 }) {
     // const audioPlayer = useRef<HTMLAudioElement>(null);
@@ -591,6 +598,7 @@ function FileTile(props: {
         // Create a blob that we can use as an src for our audio element
         const urlObj = URL.createObjectURL(files[0]);
         const mimeType = files[0].type;
+        const fileName = files[0].name;
 
         const reader = new FileReader();
         reader.addEventListener("load", async (e) => {
@@ -603,7 +611,7 @@ function FileTile(props: {
 
             const decoded = await audioCTX.decodeAudioData(arrayBuffer);
 
-            props.onFileUpdate(decoded, urlObj, mimeType);
+            props.onFileUpdate(decoded, urlObj, mimeType, fileName);
         });
         reader.readAsArrayBuffer(files[0]);
 
@@ -703,11 +711,11 @@ function Tile(props: {
     return (
         <button
             onClick={props.onClick}
-            className='flex items-center justify-center rounded-lg p-2 bg-blue text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200'
+            className='flex items-center justify-center rounded-lg p-2 bg-transparent text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-github-text dark:hover:text-indigo-300 dark:hover:bg-github-border transition-all duration-200'
         >
             <div className='w-7 h-7'>{props.icon}</div>
             {props.text && (
-                <div className='ml-2 break-text text-center text-md w-30'>
+                <div className='ml-2 break-text text-center text-md'>
                     {props.text}
                 </div>
             )}

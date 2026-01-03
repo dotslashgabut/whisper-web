@@ -7,8 +7,10 @@ export function formatAudioTimestamp(time: number) {
     time -= hours * (60 * 60);
     const minutes = (time / 60) | 0;
     time -= minutes * 60;
-    const seconds = time | 0;
+    const seconds = Math.floor(time);
+    const fractional = Math.floor((time - seconds) * 100);
+
     return `${hours ? padTime(hours) + ":" : ""}${padTime(minutes)}:${padTime(
         seconds,
-    )}`;
+    )}.${padTime(fractional)}`;
 }

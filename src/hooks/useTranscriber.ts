@@ -1,5 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
-import { useWorker } from "./useWorker";
+import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import Constants from "../utils/Constants";
 
 interface ProgressItem {
@@ -38,6 +37,7 @@ export interface Transcriber {
     isModelLoading: boolean;
     progressItems: ProgressItem[];
     start: (audioData: AudioBuffer | undefined) => void;
+    stop: () => void;
     output?: TranscriberData;
     model: string;
     setModel: (model: string) => void;
@@ -49,6 +49,8 @@ export interface Transcriber {
     setSubtask: (subtask: string) => void;
     language?: string;
     setLanguage: (language: string) => void;
+    sourceName?: string;
+    setSourceName: (name: string | undefined) => void;
 }
 
 export function useTranscriber(): Transcriber {
@@ -60,7 +62,26 @@ export function useTranscriber(): Transcriber {
 
     const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
 
-    const webWorker = useWorker((event) => {
+    const webWorker = useRef<Worker | null>(null);
+
+    const [model, setModel] = useState<string>(Constants.DEFAULT_MODEL);
+    const [subtask, setSubtask] = useState<string>(Constants.DEFAULT_SUBTASK);
+    const [quantized, setQuantized] = useState<boolean>(
+        Constants.DEFAULT_QUANTIZED,
+    );
+    const [multilingual, setMultilingual] = useState<boolean>(
+        Constants.DEFAULT_MULTILINGUAL,
+    );
+    const [language, setLanguage] = useState<string>(
+        Constants.DEFAULT_LANGUAGE,
+    );
+    const [sourceName, setSourceName] = useState<string | undefined>(undefined);
+
+    const onInputChange = useCallback(() => {
+        setTranscript(undefined);
+    }, []);
+
+    const onMessage = useCallback((event: MessageEvent) => {
         const message = event.data;
         // Update the state with the result
         switch (message.status) {
@@ -124,23 +145,21 @@ export function useTranscriber(): Transcriber {
                 // initiate/download/done
                 break;
         }
-    });
-
-    const [model, setModel] = useState<string>(Constants.DEFAULT_MODEL);
-    const [subtask, setSubtask] = useState<string>(Constants.DEFAULT_SUBTASK);
-    const [quantized, setQuantized] = useState<boolean>(
-        Constants.DEFAULT_QUANTIZED,
-    );
-    const [multilingual, setMultilingual] = useState<boolean>(
-        Constants.DEFAULT_MULTILINGUAL,
-    );
-    const [language, setLanguage] = useState<string>(
-        Constants.DEFAULT_LANGUAGE,
-    );
-
-    const onInputChange = useCallback(() => {
-        setTranscript(undefined);
     }, []);
+
+    useEffect(() => {
+        if (!webWorker.current) {
+            webWorker.current = new Worker(new URL("../worker.js", import.meta.url), {
+                type: "module",
+            });
+            webWorker.current.addEventListener("message", onMessage);
+        }
+        return () => {
+            webWorker.current?.removeEventListener("message", onMessage);
+            webWorker.current?.terminate();
+            webWorker.current = null;
+        };
+    }, [onMessage]);
 
     const postRequest = useCallback(
         async (audioData: AudioBuffer | undefined) => {
@@ -164,7 +183,7 @@ export function useTranscriber(): Transcriber {
                     audio = audioData.getChannelData(0);
                 }
 
-                webWorker.postMessage({
+                webWorker.current?.postMessage({
                     audio,
                     model,
                     multilingual,
@@ -175,8 +194,23 @@ export function useTranscriber(): Transcriber {
                 });
             }
         },
-        [webWorker, model, multilingual, quantized, subtask, language],
+        [model, multilingual, quantized, subtask, language],
     );
+
+    const stop = useCallback(() => {
+        if (webWorker.current) {
+            webWorker.current.terminate();
+            webWorker.current = null;
+            setIsBusy(false);
+            setIsModelLoading(false);
+
+            // Re-create worker for next use
+            webWorker.current = new Worker(new URL("../worker.js", import.meta.url), {
+                type: "module",
+            });
+            webWorker.current.addEventListener("message", onMessage);
+        }
+    }, [onMessage]);
 
     const transcriber = useMemo(() => {
         return {
@@ -185,6 +219,7 @@ export function useTranscriber(): Transcriber {
             isModelLoading,
             progressItems,
             start: postRequest,
+            stop,
             output: transcript,
             model,
             setModel,
@@ -196,18 +231,22 @@ export function useTranscriber(): Transcriber {
             setSubtask,
             language,
             setLanguage,
+            sourceName,
+            setSourceName,
         };
     }, [
         isBusy,
         isModelLoading,
         progressItems,
         postRequest,
+        stop,
         transcript,
         model,
         multilingual,
         quantized,
         subtask,
         language,
+        sourceName,
     ]);
 
     return transcriber;
