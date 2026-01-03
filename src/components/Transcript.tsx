@@ -30,8 +30,8 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
     const exportTXT = () => {
         let chunks = transcribedData?.chunks ?? [];
         let text = chunks
-            .map((chunk) => chunk.text)
-            .join("")
+            .map((chunk) => chunk.text.trim())
+            .join("\n")
             .trim();
 
         const blob = new Blob([text], { type: "text/plain" });
