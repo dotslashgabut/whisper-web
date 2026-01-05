@@ -12,6 +12,27 @@ This is a fork of the original Whisper Web with light/dark mode support.
   - Auto-scrolls to keep the active line in view.
 - **Expanded Export Options**: Support for SRT (subtitles) and LRC (lyrics) formats, in addition to standard TXT and JSON.
 
+## Downloading Models (Offline Support)
+Use the included scripts to easily download ONNX models and their configurations for offline use. This script lets you select which model (e.g., tiny, base, small, medium) and whether to use quantized versions.
+
+**Windows:**
+1. Navigate to the `public` folder.
+2. Double-click `download_models.cmd` OR run via PowerShell:
+   ```powershell
+   cd public
+   .\download_models.ps1
+   ```
+
+**Linux / macOS:**
+1. Navigate to the `public` folder.
+2. Run the bash script:
+   ```bash
+   cd public
+   bash download_models.sh
+   ```
+
+Follow the on-screen prompts to select your model. The files will be correctly placed in `public/models/`, and the web app will automatically prioritize these local models.
+
 ## Whisper Web
 
 ML-powered speech recognition directly in your browser! Built with [🤗 Transformers.js](https://github.com/xenova/transformers.js).
@@ -42,3 +63,15 @@ https://github.com/xenova/whisper-web/assets/26504141/fb170d84-9678-41b5-9248-a1
     > Check out [this issue](https://github.com/xenova/whisper-web/issues/8) for more details.
 
 3. Open the link (e.g., [http://localhost:5173/](http://localhost:5173/)) in your browser.
+
+## Using Local Models
+
+This application is configured to load ONNX models locally if they are present, preventing the need to re-download them when switching.
+
+1.  **Download the Model**: Download the ONNX model files (including `config.json`, `tokenizer.json`, `model.onnx`, etc.) from Hugging Face.
+2.  **Create Directory**: Create a folder structure in `public/models/` that matches the model name.
+    *   For example, if you want to use `Xenova/whisper-tiny.en`, create the folder:
+        `public/models/Xenova/whisper-tiny.en`
+3.  **Place Files**: Place the downloaded model files inside that folder.
+
+The app will check this local directory first. If the model is found, it will load it directly. If not, it will attempt to download it from the Hugging Face Hub (checks for existence online if not found local).
