@@ -12,6 +12,9 @@ This is a fork of the original Whisper Web with light/dark mode support.
   - Auto-scrolls to keep the active line in view.
 - **Expanded Export Options**: Support for SRT (subtitles) and LRC (lyrics) formats, in addition to standard TXT and JSON.
 
+**Fully Offline Support**
+For a fully offline experience (models downloaded locally), clone the `fully-offline` branch: https://github.com/dotslashgabut/whisper-web/tree/fully-offline
+
 ## Whisper Web
 
 ML-powered speech recognition directly in your browser! Built with [🤗 Transformers.js](https://github.com/xenova/transformers.js).
