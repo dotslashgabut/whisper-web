@@ -2,7 +2,16 @@
 import { pipeline, env } from "@xenova/transformers";
 
 // Disable local models
-env.allowLocalModels = false;
+// env.allowLocalModels = false;
+
+// Enable local models
+env.allowLocalModels = true;
+env.allowRemoteModels = false;
+env.localModelPath = '/models/';
+env.useBrowserCache = false;
+
+// Configure local WASM paths
+env.backends.onnx.wasm.wasmPaths = '/wasm/';
 
 // Define model factories
 // Ensures only one model is created of each type
