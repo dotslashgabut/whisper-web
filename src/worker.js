@@ -45,6 +45,7 @@ self.addEventListener("message", async (event) => {
         message.quantized,
         message.subtask,
         message.language,
+        message.timestampGranularity,
     );
     if (transcript === null) return;
 
@@ -69,6 +70,7 @@ const transcribe = async (
     quantized,
     subtask,
     language,
+    timestampGranularity,
 ) => {
 
     const isDistilWhisper = model.startsWith("distil-whisper/");
@@ -163,7 +165,7 @@ const transcribe = async (
         task: subtask,
 
         // Return timestamps
-        return_timestamps: true,
+        return_timestamps: timestampGranularity === "word" ? "word" : true,
         force_full_sequences: false,
 
         // Callback functions

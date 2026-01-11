@@ -51,6 +51,8 @@ export interface Transcriber {
     setLanguage: (language: string) => void;
     sourceName?: string;
     setSourceName: (name: string | undefined) => void;
+    timestampGranularity: string;
+    setTimestampGranularity: (granularity: string) => void;
 }
 
 export function useTranscriber(): Transcriber {
@@ -76,6 +78,7 @@ export function useTranscriber(): Transcriber {
         Constants.DEFAULT_LANGUAGE,
     );
     const [sourceName, setSourceName] = useState<string | undefined>(undefined);
+    const [timestampGranularity, setTimestampGranularity] = useState<string>("segment");
 
     const onInputChange = useCallback(() => {
         setTranscript(undefined);
@@ -191,10 +194,11 @@ export function useTranscriber(): Transcriber {
                     subtask: multilingual ? subtask : null,
                     language:
                         multilingual && language !== "auto" ? language : null,
+                    timestampGranularity,
                 });
             }
         },
-        [model, multilingual, quantized, subtask, language],
+        [model, multilingual, quantized, subtask, language, timestampGranularity],
     );
 
     const stop = useCallback(() => {
@@ -233,6 +237,8 @@ export function useTranscriber(): Transcriber {
             setLanguage,
             sourceName,
             setSourceName,
+            timestampGranularity,
+            setTimestampGranularity,
         };
     }, [
         isBusy,
@@ -247,6 +253,7 @@ export function useTranscriber(): Transcriber {
         subtask,
         language,
         sourceName,
+        timestampGranularity,
     ]);
 
     return transcriber;
