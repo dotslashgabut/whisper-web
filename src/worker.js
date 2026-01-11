@@ -33,8 +33,8 @@ class PipelineFactory {
                 quantized: this.quantized,
                 progress_callback,
 
-                // Load the main revision to ensure we have access to output_attentions
-                revision: "main"
+                // For medium models, we need to load the `no_attentions` revision to avoid running out of memory
+                revision: this.model.includes("/whisper-medium") ? "no_attentions" : "main"
             });
         }
 
