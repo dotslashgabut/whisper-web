@@ -180,5 +180,23 @@ const transcribe = async (
         return null;
     });
 
+    // If word-level is requested, we also want to preserve the segment-level structure
+    // which gives us better "lines" for captions/TTML.
+    if (output && timestampGranularity === "word") {
+        try {
+            const segmentData = transcriber.tokenizer._decode_asr(chunks_to_process, {
+                time_precision: time_precision,
+                return_timestamps: true, // Force segments
+                force_full_sequences: false,
+            });
+            // segmentData is [text, { chunks: [...] }]
+            if (segmentData && segmentData[1] && segmentData[1].chunks) {
+                output.tchunks = segmentData[1].chunks;
+            }
+        } catch (e) {
+            console.error("Failed to generate segment structure", e);
+        }
+    }
+
     return output;
 };
