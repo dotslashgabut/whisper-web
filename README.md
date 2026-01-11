@@ -10,7 +10,13 @@ This is a fork of the original Whisper Web with light/dark mode support.
   - Click on any line to jump to that part of the audio.
   - Highlights the currently spoken line in real-time.
   - Auto-scrolls to keep the active line in view.
-- **Expanded Export Options**: Support for SRT (subtitles) and LRC (lyrics) formats, in addition to standard TXT and JSON.
+- **Expanded Export Options**: 
+  - **TTML Support**: Advanced export with word-by-word millisecond precision in a standardized XML format (`<p>` for lines, `<span>` for words).
+  - **SRT & LRC**: Support for standard subtitle and lyric formats.
+  - **JSON & TXT**: Standard data exports.
+- **Timestamp Granularity**: 
+  - **Word-Level**: Choose to generate timestamps for every single word.
+  - **Segment-Level**: Traditional per-line groupings.
 
 **Fully Offline Support**
 For a fully offline experience (models downloaded locally), clone the `fully-offline` branch: https://github.com/dotslashgabut/whisper-web/tree/fully-offline
