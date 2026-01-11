@@ -452,21 +452,6 @@ function SettingsModal(props: {
                                 Quantized
                             </label>
                         </div>
-                        <div className='flex'>
-                            <input
-                                id='wordTimestamps'
-                                type='checkbox'
-                                checked={props.transcriber.wordTimestamps}
-                                onChange={(e) => {
-                                    props.transcriber.setWordTimestamps(
-                                        e.target.checked,
-                                    );
-                                }}
-                            ></input>
-                            <label htmlFor={"wordTimestamps"} className='ms-1'>
-                                Word Timestamps
-                            </label>
-                        </div>
                     </div>
                     {props.transcriber.multilingual && (
                         <>

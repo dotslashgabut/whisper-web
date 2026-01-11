@@ -51,8 +51,6 @@ export interface Transcriber {
     setLanguage: (language: string) => void;
     sourceName?: string;
     setSourceName: (name: string | undefined) => void;
-    wordTimestamps: boolean;
-    setWordTimestamps: (wordTimestamps: boolean) => void;
 }
 
 export function useTranscriber(): Transcriber {
@@ -78,7 +76,6 @@ export function useTranscriber(): Transcriber {
         Constants.DEFAULT_LANGUAGE,
     );
     const [sourceName, setSourceName] = useState<string | undefined>(undefined);
-    const [wordTimestamps, setWordTimestamps] = useState<boolean>(false);
 
     const onInputChange = useCallback(() => {
         setTranscript(undefined);
@@ -194,11 +191,10 @@ export function useTranscriber(): Transcriber {
                     subtask: multilingual ? subtask : null,
                     language:
                         multilingual && language !== "auto" ? language : null,
-                    wordTimestamps,
                 });
             }
         },
-        [model, multilingual, quantized, subtask, language, wordTimestamps],
+        [model, multilingual, quantized, subtask, language],
     );
 
     const stop = useCallback(() => {
@@ -237,8 +233,6 @@ export function useTranscriber(): Transcriber {
             setLanguage,
             sourceName,
             setSourceName,
-            wordTimestamps,
-            setWordTimestamps,
         };
     }, [
         isBusy,
@@ -253,7 +247,6 @@ export function useTranscriber(): Transcriber {
         subtask,
         language,
         sourceName,
-        wordTimestamps,
     ]);
 
     return transcriber;
