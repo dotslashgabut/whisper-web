@@ -163,17 +163,45 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
             return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
         };
 
-        // Group chunks into text lines (sentences)
+        // Strict grouping heuristics for cleaner captions
         let lines: typeof chunks[] = [];
         let currentLine: typeof chunks = [];
 
         chunks.forEach((chunk, index) => {
-            currentLine.push(chunk);
             const text = chunk.text.trim();
-            // End line on punctuation or if it's the last chunk
-            if (/[.?!]["']?$/.test(text) || index === chunks.length - 1) {
+            const prevChunk = index > 0 ? chunks[index - 1] : null;
+
+            let shouldBreak = false;
+
+            if (currentLine.length > 0 && prevChunk) {
+                // 1. Break on Punctuation (Sentence boundaries)
+                if (/[.?!]$/.test(prevChunk.text.trim())) {
+                    shouldBreak = true;
+                }
+
+                // 2. Break on Time Gap (Silence > 0.3s)
+                const prevEnd = prevChunk.timestamp[1] ?? prevChunk.timestamp[0];
+                const currStart = chunk.timestamp[0];
+                if (!shouldBreak && (currStart - prevEnd > 0.3)) {
+                    shouldBreak = true;
+                }
+
+                // 3. Break on Length (> 60 chars) to allow for rap/conversation
+                const currentLength = currentLine.reduce((acc, c) => acc + c.text.length, 0);
+                if (!shouldBreak && (currentLength + text.length > 60)) {
+                    shouldBreak = true;
+                }
+            }
+
+            if (shouldBreak) {
                 lines.push(currentLine);
                 currentLine = [];
+            }
+
+            currentLine.push(chunk);
+
+            if (index === chunks.length - 1) {
+                lines.push(currentLine);
             }
         });
 

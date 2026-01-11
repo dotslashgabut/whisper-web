@@ -22,6 +22,7 @@ interface TranscriberCompleteData {
     data: {
         text: string;
         chunks: { text: string; timestamp: [number, number | null] }[];
+        tchunks?: { text: string; timestamp: [number, number | null] }[];
     };
 }
 
@@ -29,6 +30,7 @@ export interface TranscriberData {
     isBusy: boolean;
     text: string;
     chunks: { text: string; timestamp: [number, number | null] }[];
+    tchunks?: { text: string; timestamp: [number, number | null] }[];
 }
 
 export interface Transcriber {
@@ -119,6 +121,7 @@ export function useTranscriber(): Transcriber {
                     isBusy: false,
                     text: completeMessage.data.text,
                     chunks: completeMessage.data.chunks,
+                    tchunks: completeMessage.data.tchunks,
                 });
                 setIsBusy(false);
                 break;
