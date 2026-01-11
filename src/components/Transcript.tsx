@@ -141,6 +141,75 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
         saveBlob(blob, `${getBaseFilename()}_alt.lrc`);
     };
 
+    const exportTTML = () => {
+        let chunks = transcribedData?.chunks ?? [];
+        let ttmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:tts="http://www.w3.org/ns/ttml#styling" xml:lang="en">
+  <head>
+    <styling>
+      <style id="1" tts:fontSize="14" tts:fontFamily="Arial" tts:textAlign="center" tts:color="white" tts:backgroundColor="black"/>
+    </styling>
+  </head>
+  <body>
+    <div>
+`;
+
+        const formatTTMLTime = (time: number) => {
+            const hours = Math.floor(time / 3600);
+            const minutes = Math.floor((time % 3600) / 60);
+            const seconds = Math.floor(time % 60);
+            const milliseconds = Math.floor((time % 1) * 1000);
+
+            return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
+        };
+
+        // Group chunks into text lines (sentences)
+        let lines: typeof chunks[] = [];
+        let currentLine: typeof chunks = [];
+
+        chunks.forEach((chunk, index) => {
+            currentLine.push(chunk);
+            const text = chunk.text.trim();
+            // End line on punctuation or if it's the last chunk
+            if (/[.?!]["']?$/.test(text) || index === chunks.length - 1) {
+                lines.push(currentLine);
+                currentLine = [];
+            }
+        });
+
+        lines.forEach((line) => {
+            if (line.length === 0) return;
+
+            const firstChunk = line[0];
+            const lastChunk = line[line.length - 1];
+
+            const pStart = firstChunk.timestamp[0];
+            const pEnd = lastChunk.timestamp[1] ?? lastChunk.timestamp[0];
+
+            ttmlContent += `      <p begin="${formatTTMLTime(pStart)}" end="${formatTTMLTime(pEnd)}" style="1">\n`;
+
+            line.forEach((chunk) => {
+                const cStart = chunk.timestamp[0];
+                const cEnd = chunk.timestamp[1] ?? cStart;
+                const safeText = chunk.text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+
+                ttmlContent += `        <span begin="${formatTTMLTime(cStart)}" end="${formatTTMLTime(cEnd)}">${safeText}</span>\n`;
+            });
+
+            ttmlContent += `      </p>\n`;
+        });
+
+        ttmlContent += `    </div>
+  </body>
+</tt>`;
+
+        const blob = new Blob([ttmlContent], { type: "application/xml" });
+        saveBlob(blob, `${getBaseFilename()}.ttml`);
+    };
+
     // Scroll to the bottom when the component updates
     useEffect(() => {
         if (divRef.current) {
@@ -231,6 +300,12 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
                             className='text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800 inline-flex items-center'
                         >
                             LRC alt
+                        </button>
+                        <button
+                            onClick={exportTTML}
+                            className='text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800 inline-flex items-center'
+                        >
+                            TTML
                         </button>
                     </div>
                 )

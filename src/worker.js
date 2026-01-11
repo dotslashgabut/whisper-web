@@ -1,15 +1,8 @@
 /* eslint-disable camelcase */
 import { pipeline, env } from "@xenova/transformers";
 
-// Enable local models
-env.allowLocalModels = true;
-env.allowRemoteModels = false;
-env.localModelPath = '/models/';
-env.useBrowserCache = false;
-
-// Configure local WASM paths
-env.backends.onnx.wasm.wasmPaths = '/wasm/';
-
+// Disable local models
+env.allowLocalModels = false;
 
 // Define model factories
 // Ensures only one model is created of each type
@@ -52,6 +45,7 @@ self.addEventListener("message", async (event) => {
         message.quantized,
         message.subtask,
         message.language,
+        message.timestampGranularity,
     );
     if (transcript === null) return;
 
@@ -76,6 +70,7 @@ const transcribe = async (
     quantized,
     subtask,
     language,
+    timestampGranularity,
 ) => {
 
     const isDistilWhisper = model.startsWith("distil-whisper/");
@@ -170,7 +165,7 @@ const transcribe = async (
         task: subtask,
 
         // Return timestamps
-        return_timestamps: true,
+        return_timestamps: timestampGranularity === "word" ? "word" : true,
         force_full_sequences: false,
 
         // Callback functions

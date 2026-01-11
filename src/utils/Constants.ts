@@ -13,18 +13,19 @@ function mobileTabletCheck() {
             check = true;
     })(
         navigator.userAgent ||
-        navigator.vendor ||
-        ("opera" in window && typeof window.opera === "string"
-            ? window.opera
-            : ""),
+            navigator.vendor ||
+            ("opera" in window && typeof window.opera === "string"
+                ? window.opera
+                : ""),
     );
     return check;
 }
 const isMobileOrTablet = mobileTabletCheck();
 export default {
     SAMPLING_RATE: 16000,
-    DEFAULT_AUDIO_URL: `/audio/${isMobileOrTablet ? "jfk" : "ted_60_16k"
-        }.wav`,
+    DEFAULT_AUDIO_URL: `/audio/${
+        isMobileOrTablet ? "jfk" : "ted_60_16k"
+    }.wav`,
     DEFAULT_MODEL: "Xenova/whisper-tiny",
     DEFAULT_SUBTASK: "transcribe",
     DEFAULT_LANGUAGE: "english",

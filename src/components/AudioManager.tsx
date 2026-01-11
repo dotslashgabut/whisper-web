@@ -488,6 +488,19 @@ function SettingsModal(props: {
                             </select>
                         </>
                     )}
+                    <label>Timestamp Granularity</label>
+                    <select
+                        className='mt-1 mb-3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-github-bg dark:border-github-border dark:placeholder-github-muted dark:text-github-text dark:focus:ring-blue-500 dark:focus:border-blue-500'
+                        defaultValue={props.transcriber.timestampGranularity}
+                        onChange={(e) => {
+                            props.transcriber.setTimestampGranularity(
+                                e.target.value,
+                            );
+                        }}
+                    >
+                        <option value={"segment"}>Segment (per-line)</option>
+                        <option value={"word"}>Word (per-word)</option>
+                    </select>
                 </>
             }
             onClose={props.onClose}
