@@ -143,7 +143,6 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
 
     const exportTTML = () => {
         let chunks = transcribedData?.chunks ?? [];
-        let tchunks = transcribedData?.tchunks; // Segment-level chunks if available
         let ttmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <tt xmlns="http://www.w3.org/ns/ttml" xmlns:tts="http://www.w3.org/ns/ttml#styling" xml:lang="en">
   <head>
@@ -164,70 +163,47 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
             return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
         };
 
-        // Determine lines
+        // Strict grouping heuristics for cleaner captions
         let lines: typeof chunks[] = [];
+        let currentLine: typeof chunks = [];
 
-        if (tchunks) {
-            // Use the natural segments from the model (tchunks) as the grouping truth
-            tchunks.forEach((segment) => {
-                const segStart = segment.timestamp[0];
-                const segEnd = segment.timestamp[1] ?? (segStart + 5); // Fallback length
+        chunks.forEach((chunk, index) => {
+            const text = chunk.text.trim();
+            const prevChunk = index > 0 ? chunks[index - 1] : null;
 
-                // Find all words that mostly overlap with this segment
-                // A word is considered part of the segment if its midpoint falls within the segment (roughly)
-                const segmentWords = chunks.filter((word) => {
-                    const wordStart = word.timestamp[0];
-                    const wordEnd = word.timestamp[1] ?? wordStart;
-                    const wordMid = (wordStart + wordEnd) / 2;
-                    // Relaxed bounds slightly to catch boundary words
-                    return wordMid >= (segStart - 0.1) && wordMid <= (segEnd + 0.1);
-                });
+            let shouldBreak = false;
 
-                if (segmentWords.length > 0) {
-                    lines.push(segmentWords);
-                }
-            });
-        } else {
-            // Fallback to heuristic grouping
-            let currentLine: typeof chunks = [];
-            chunks.forEach((chunk, index) => {
-                const text = chunk.text.trim();
-                const prevChunk = index > 0 ? chunks[index - 1] : null;
-
-                let shouldBreak = false;
-
-                if (currentLine.length > 0 && prevChunk) {
-                    // 1. Check for punctuation on previous chunk
-                    if (/[.?!]["']?$/.test(prevChunk.text.trim())) {
-                        shouldBreak = true;
-                    }
-
-                    // 2. Check for time gap (0.4s threshold used for lyrics)
-                    const prevEnd = prevChunk.timestamp[1] ?? prevChunk.timestamp[0];
-                    const currStart = chunk.timestamp[0];
-                    if (!shouldBreak && (currStart - prevEnd > 0.4)) {
-                        shouldBreak = true;
-                    }
-
-                    // 3. Check for line length (max 32 chars)
-                    const currentLength = currentLine.reduce((acc, c) => acc + c.text.length, 0);
-                    if (!shouldBreak && (currentLength + text.length > 32)) {
-                        shouldBreak = true;
-                    }
+            if (currentLine.length > 0 && prevChunk) {
+                // 1. Break on Punctuation (Sentence boundaries)
+                if (/[.?!]$/.test(prevChunk.text.trim())) {
+                    shouldBreak = true;
                 }
 
-                if (shouldBreak) {
-                    lines.push(currentLine);
-                    currentLine = [];
+                // 2. Break on Time Gap (Silence > 0.3s)
+                const prevEnd = prevChunk.timestamp[1] ?? prevChunk.timestamp[0];
+                const currStart = chunk.timestamp[0];
+                if (!shouldBreak && (currStart - prevEnd > 0.3)) {
+                    shouldBreak = true;
                 }
 
-                currentLine.push(chunk);
-
-                if (index === chunks.length - 1) {
-                    lines.push(currentLine);
+                // 3. Break on Length (> 60 chars) to allow for rap/conversation
+                const currentLength = currentLine.reduce((acc, c) => acc + c.text.length, 0);
+                if (!shouldBreak && (currentLength + text.length > 60)) {
+                    shouldBreak = true;
                 }
-            });
-        }
+            }
+
+            if (shouldBreak) {
+                lines.push(currentLine);
+                currentLine = [];
+            }
+
+            currentLine.push(chunk);
+
+            if (index === chunks.length - 1) {
+                lines.push(currentLine);
+            }
+        });
 
         lines.forEach((line) => {
             if (line.length === 0) return;
