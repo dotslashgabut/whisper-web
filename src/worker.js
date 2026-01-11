@@ -45,6 +45,7 @@ self.addEventListener("message", async (event) => {
         message.quantized,
         message.subtask,
         message.language,
+        message.wordTimestamps,
     );
     if (transcript === null) return;
 
@@ -69,6 +70,7 @@ const transcribe = async (
     quantized,
     subtask,
     language,
+    word_timestamps,
 ) => {
 
     const isDistilWhisper = model.startsWith("distil-whisper/");
@@ -137,7 +139,7 @@ const transcribe = async (
         // TODO optimise so we don't have to decode all chunks every time
         let data = transcriber.tokenizer._decode_asr(chunks_to_process, {
             time_precision: time_precision,
-            return_timestamps: true,
+            return_timestamps: word_timestamps ? "word" : true,
             force_full_sequences: false,
         });
 
@@ -163,7 +165,7 @@ const transcribe = async (
         task: subtask,
 
         // Return timestamps
-        return_timestamps: true,
+        return_timestamps: word_timestamps ? "word" : true,
         force_full_sequences: false,
 
         // Callback functions
