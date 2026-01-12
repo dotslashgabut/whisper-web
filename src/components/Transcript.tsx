@@ -219,7 +219,12 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
             line.forEach((chunk) => {
                 const cStart = chunk.timestamp[0];
                 const cEnd = chunk.timestamp[1] ?? cStart;
-                const safeText = chunk.text
+                let text = chunk.text;
+                if (text.startsWith(" ")) {
+                    text = text.slice(1) + " ";
+                }
+
+                const safeText = text
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
