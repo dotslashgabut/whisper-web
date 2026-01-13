@@ -1,8 +1,9 @@
 # Whisper Web (light/dark mode fork)
 
-This is a fork of the original Whisper Web with light/dark mode support.
+This is a fork of the original Whisper Web with light/dark mode support. Export to JSON, TXT, SRT, LRC, TTML format.
 
-![Whisper Web (light/dark mode fork)](screenshot.png)
+![Whisper Web (light/dark mode fork)](screenshot1.png)
+![Whisper Web (light/dark mode fork)](screenshot2.png)
 
 **Key Differences from Original**
 - **Dark Mode**: Full support for light and dark themes.
