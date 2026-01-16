@@ -141,6 +141,69 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
         saveBlob(blob, `${getBaseFilename()}_alt.lrc`);
     };
 
+    const exportELRC = () => {
+        const data = transcribedData;
+        if (!data) return;
+
+        // If tchunks exists (Word Level), use it for lines and chunks for words
+        // If not (Segment Level), use chunks for lines and treat tokens as single block
+        const lines = data.tchunks ?? data.chunks ?? [];
+        const words = data.tchunks ? (data.chunks ?? []) : [];
+
+        let eLrcContent = "";
+        let wordIndex = 0;
+
+        const formatTime = (time: number) => {
+            const minutes = Math.floor(time / 60);
+            const seconds = Math.floor(time % 60);
+            const hundredths = Math.floor((time % 1) * 100);
+
+            return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}`;
+        };
+
+        lines.forEach((line) => {
+            const lineStart = line.timestamp[0];
+            const lineEnd = line.timestamp[1] ?? Infinity;
+
+            const lineTimestamp = `[${formatTime(lineStart)}]`;
+            let lineContent = "";
+
+            if (words.length > 0) {
+                // Collect words for this line
+                while (wordIndex < words.length) {
+                    const word = words[wordIndex];
+                    const wordStart = word.timestamp[0];
+
+                    // Stop if word belongs to next line (approximated by lineEnd)
+                    if (wordStart >= lineEnd - 0.01) {
+                        break;
+                    }
+
+                    const wordTimestamp = `<${formatTime(wordStart)}>`;
+                    let text = word.text;
+
+                    // Handle spacing
+                    if (text.startsWith(" ")) {
+                        lineContent += ` ${wordTimestamp}${text.trimStart()}`;
+                    } else {
+                        lineContent += `${wordTimestamp}${text}`;
+                    }
+
+                    wordIndex++;
+                }
+            } else {
+                // Segment only
+                const wordTimestamp = `<${formatTime(lineStart)}>`;
+                lineContent += `${wordTimestamp}${line.text.trim()}`;
+            }
+
+            eLrcContent += `${lineTimestamp}${lineContent}\n`;
+        });
+
+        const blob = new Blob([eLrcContent], { type: "text/plain" });
+        saveBlob(blob, `${getBaseFilename()}.lrc`);
+    };
+
     const exportTTML = () => {
         let chunks = transcribedData?.chunks ?? [];
         let ttmlContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -333,6 +396,12 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
                             className='text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800 inline-flex items-center'
                         >
                             LRC alt
+                        </button>
+                        <button
+                            onClick={exportELRC}
+                            className='text-white bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800 inline-flex items-center'
+                        >
+                            eLRC
                         </button>
                         <button
                             onClick={exportTTML}
