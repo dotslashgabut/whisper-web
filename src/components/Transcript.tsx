@@ -170,6 +170,7 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
 
             if (words.length > 0) {
                 // Collect words for this line
+                let firstWordInLine = true;
                 while (wordIndex < words.length) {
                     const word = words[wordIndex];
                     const wordStart = word.timestamp[0];
@@ -180,15 +181,16 @@ export default function Transcript({ transcribedData, sourceName, onTimeStampCli
                     }
 
                     const wordTimestamp = `<${formatTime(wordStart)}>`;
-                    let text = word.text;
+                    const text = word.text;
 
-                    // Handle spacing
-                    if (text.startsWith(" ")) {
-                        lineContent += ` ${wordTimestamp}${text.trimStart()}`;
+                    // Handle spacing: only add space if text starts with space and it is NOT the first word
+                    if (text.startsWith(" ") && !firstWordInLine) {
+                        lineContent += ` ${wordTimestamp}${text.trim()}`;
                     } else {
-                        lineContent += `${wordTimestamp}${text}`;
+                        lineContent += `${wordTimestamp}${text.trim()}`;
                     }
 
+                    firstWordInLine = false;
                     wordIndex++;
                 }
             } else {

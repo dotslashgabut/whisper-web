@@ -1,6 +1,6 @@
 # Whisper Web (light/dark mode fork)
 
-This is a fork of the original Whisper Web with light/dark mode support. Export to JSON, TXT, SRT, LRC, TTML format.
+This is a fork of the original Whisper Web with light/dark mode support. Export to JSON, TXT, SRT, LRC, Enhanced LRC, TTML format.
 
 ![Whisper Web (light/dark mode fork)](screenshot1.png)
 ![Whisper Web (light/dark mode fork)](screenshot2.png)
@@ -13,6 +13,7 @@ This is a fork of the original Whisper Web with light/dark mode support. Export 
   - Auto-scrolls to keep the active line in view.
 - **Expanded Export Options**: 
   - **TTML Support**: Advanced export with word-by-word millisecond precision in a standardized XML format (`<p>` for lines, `<span>` for words).
+  - **Enhanced LRC (eLRC)**: Word-level timestamps in LRC format (e.g., `[mm:ss.xx]<mm:ss.xx>Word`).
   - **SRT & LRC**: Support for standard subtitle and lyric formats.
   - **JSON & TXT**: Standard data exports.
 - **Timestamp Granularity**: 
